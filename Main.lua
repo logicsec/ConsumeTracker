@@ -757,7 +757,7 @@ function ConsumeTracker_CreateMainWindow()
     local footerText = ConsumeTracker_MainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     footerText:SetText("Made by Astraeya (v" .. GetAddOnMetadata("ConsumeTracker", "Version") .. ")")
     footerText:SetTextColor(0.6, 0.6, 0.6)
-    footerText:SetPoint("BOTTOM", ConsumeTracker_MainFrame, "BOTTOM", 90, 10) -- Shifted right due to sidebar
+    footerText:SetPoint("BOTTOM", ConsumeTracker_MainFrame, "BOTTOMLEFT", 90, 10) -- Centered in 180px sidebar
 
     -- Add Custom Content for Tabs
     ConsumeTracker_CreateManagerContent(tab1Frame)
