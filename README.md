@@ -5,12 +5,14 @@ A comprehensive WoW 1.12.1 addon that combines consumable tracking with a custom
 ## Features
 
 ### 🎯 Consumable Tracking
+
 - Track consumables across inventory, bank, and mail
 - Categorized display (Elixirs, Flasks, Food, Potions, etc.)
 - Color-coded counts (red/orange/yellow/green)
 - Real-time updates when items change
 
 ### 🎮 Action Bar
+
 - Customizable action bar for quick consumable access
 - Drag-and-drop reordering
 - Click to use consumables
@@ -23,6 +25,7 @@ A comprehensive WoW 1.12.1 addon that combines consumable tracking with a custom
 - Keybind support
 
 ### 🔍 Buff Detection
+
 - Automatically detects active consumable buffs
 - Grays out buttons when buff is active (prevents accidental reuse)
 - Tracks cooldowns for instant-use items (potions, bandages)
@@ -30,6 +33,7 @@ A comprehensive WoW 1.12.1 addon that combines consumable tracking with a custom
 - Shift+Click to override and force use
 
 ### ⚙️ Configuration
+
 - Enable/disable buff detection
 - Enable/disable buff replacement warnings
 - Adjustable action bar scale (0.5x - 2.0x)
@@ -46,24 +50,29 @@ A comprehensive WoW 1.12.1 addon that combines consumable tracking with a custom
 ## Usage
 
 ### Basic Commands
+
 - `/ct` or `/consumetracker` - Show help
-- `/ct show` - Show tracker window
-- `/ct hide` - Hide tracker window
+- `/ct show` - Show Action Bar
+- `/ct hide` - Hide Action Bar
+- `/ct reset` - Reset Action Bar position
+- `/ct menu` - Show tracker window
 - `/ct config` - Open settings
-- `/ct reset` - Clear action bar
 
 ### Minimap Icon
+
 - **Left-click**: Toggle tracker window
 - **Right-click**: Open settings
 - **Drag**: Move icon around minimap
 
 ### Adding Consumables
+
 1. Click the minimap icon or type `/ct show`
 2. Browse the categorized list of consumables
 3. Click "Add" next to items you want on your action bar
 4. Items appear on the action bar immediately
 
 ### Using the Action Bar
+
 - **Click**: Use the consumable (if available and not grayed out)
 - **Shift+Click**: Force use (bypasses buff detection and warnings)
 - **Ctrl+Drag**: Move the entire action bar
@@ -71,18 +80,23 @@ A comprehensive WoW 1.12.1 addon that combines consumable tracking with a custom
 - **Hover**: View tooltip
 
 ### Buff Detection
+
 When you use a consumable that provides a buff:
+
 1. The button grays out immediately on click
 2. The addon verifies the buff is active
 3. The button stays grayed while the buff is active
 4. When the buff expires, the button returns to normal
 
 For instant-use items (potions, bandages):
+
 - The button grays out during the cooldown period
 - Returns to normal when cooldown expires
 
 ### Buff Replacement Warnings
+
 If you try to use a consumable that would replace an existing buff (e.g., switching between Battle Elixirs):
+
 - A warning dialog appears showing which buff will be replaced
 - Click "Yes" to confirm or "No" to cancel
 - Hold Shift to bypass the warning
@@ -99,27 +113,35 @@ If you try to use a consumable that would replace an existing buff (e.g., switch
 ## Supported Consumables
 
 ### Battle Elixirs
+
 - Elixir of the Mongoose, Greater Agility, Brute Force, Giants, etc.
 
 ### Guardian Elixirs
+
 - Elixir of the Sages, Greater Arcane Elixir, Superior Defense, etc.
 
 ### Flasks
+
 - Flask of Supreme Power, Titans, Distilled Wisdom, Chromatic Resistance
 
 ### Food Buffs
+
 - Grilled Squid, Nightfin Soup, Poached Sunscale Salmon, etc.
 
 ### Potions
+
 - Major Healing/Mana Potions, Combat Potions, etc.
 
 ### Runes
+
 - Demonic Rune, Dark Rune
 
 ### Bandages
+
 - Heavy Runecloth Bandage, Runecloth Bandage, etc.
 
 ### Weapon Buffs
+
 - Brilliant Wizard Oil, Dense Sharpening Stone, etc.
 
 ## Known Limitations
@@ -131,18 +153,22 @@ If you try to use a consumable that would replace an existing buff (e.g., switch
 ## Troubleshooting
 
 **Action bar not showing:**
+
 - Type `/ct show` or click the minimap icon
 - Check that you've added items to the bar via the tracker window
 
 **Buttons not graying out:**
+
 - Ensure buff detection is enabled in settings (`/ct config`)
 - Some consumables don't provide detectable buffs (this is normal)
 
 **Items not appearing in tracker:**
+
 - The addon only shows items from the database
 - Custom or non-standard consumables may not be included
 
 **Position reset after reload:**
+
 - The position should save automatically
 - If issues persist, try `/ct config` and use "Reset Bar Position"
 
@@ -151,12 +177,14 @@ If you try to use a consumable that would replace an existing buff (e.g., switch
 Created by Nicholas Knight
 
 Inspired by:
+
 - **ConsumesManager** by Horyoshi (logicsec)
 - **ConsumeBar** by Fastbond
 
 ## Version History
 
 ### v1.0.0 (Initial Release)
+
 - Consumable tracking across inventory, bank, and mail
 - Customizable action bar with drag-drop
 - Buff detection and cooldown tracking

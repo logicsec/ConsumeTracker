@@ -1,5 +1,5 @@
 -- Onload & Click Functionality -------------------------------------------------------------------------
-    WindowWidth = 350
+    WindowWidth = 600
 
     function ConsumeTracker_OnLoad(self)
         self:RegisterForDrag("LeftButton")
@@ -68,6 +68,43 @@
         end
         
         ConsumeTracker_CharacterSettings[key] = value
+    end
+
+-- Slash Command Handler --------------------------------------------------------------------------------
+    SLASH_CONSUMETRACKER1 = "/ct"
+    SLASH_CONSUMETRACKER2 = "/consumetracker"
+
+    SlashCmdList["CONSUMETRACKER"] = function(msg)
+        local cmd = string.lower(msg)
+        
+        if cmd == "show" then
+            ConsumeTracker_Options.showActionBar = true
+            ConsumeTracker_UpdateActionBar()
+            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ConsumeTracker:|r Action Bar shown.")
+        elseif cmd == "hide" then
+            ConsumeTracker_Options.showActionBar = false
+            ConsumeTracker_UpdateActionBar()
+            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ConsumeTracker:|r Action Bar hidden.")
+        elseif cmd == "reset" then
+             ConsumeTracker_SetCharacterSetting("ActionBarPoint", nil)
+             ConsumeTracker_SetCharacterSetting("ActionBarRelativePoint", nil)
+             ConsumeTracker_SetCharacterSetting("ActionBarXOfs", nil)
+             ConsumeTracker_SetCharacterSetting("ActionBarYOfs", nil)
+             ConsumeTracker_RestoreActionBarPosition()
+             DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ConsumeTracker:|r Action Bar position reset.")
+        elseif cmd == "menu" or cmd == "config" or cmd == "options" then
+            ConsumeTracker_ShowMainWindow()
+            if cmd == "config" or cmd == "options" then
+                 ConsumeTracker_ShowTab(4) -- Go to Settings tab
+            end
+        else
+            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ConsumeTracker Usage:|r")
+            DEFAULT_CHAT_FRAME:AddMessage("/ct show  - Show the Action Bar")
+            DEFAULT_CHAT_FRAME:AddMessage("/ct hide  - Hide the Action Bar")
+            DEFAULT_CHAT_FRAME:AddMessage("/ct reset - Reset Action Bar position")
+            DEFAULT_CHAT_FRAME:AddMessage("/ct menu  - Open Main Window")
+            DEFAULT_CHAT_FRAME:AddMessage("/ct config - Open Settings")
+        end
     end
 
 -- Event frame for updating data ------------------------------------------------------------------------
@@ -419,8 +456,8 @@ end
 function ConsumeTracker_CreateMainWindow()
     -- Main Frame
     ConsumeTracker_MainFrame = CreateFrame("Frame", "ConsumeTracker_MainFrame", UIParent)
-    ConsumeTracker_MainFrame:SetWidth(WindowWidth)
-    ConsumeTracker_MainFrame:SetHeight(512)
+    ConsumeTracker_MainFrame:SetWidth(800)
+    ConsumeTracker_MainFrame:SetHeight(500)
     ConsumeTracker_MainFrame:SetPoint("CENTER", UIParent, "CENTER")
     ConsumeTracker_MainFrame:SetFrameStrata("DIALOG")
     ConsumeTracker_MainFrame:SetMovable(true)
@@ -435,18 +472,24 @@ function ConsumeTracker_CreateMainWindow()
 
     table.insert(UISpecialFrames, "ConsumeTracker_MainFrame")
 
-    -- Background Texture
+    -- Sidebar Background
+    local sidebar = ConsumeTracker_MainFrame:CreateTexture(nil, "BACKGROUND")
+    sidebar:SetTexture(0, 0, 0, 0.5) -- Dark sidebar
+    sidebar:SetWidth(180)
+    sidebar:SetPoint("TOPLEFT", ConsumeTracker_MainFrame, "TOPLEFT", 5, -5)
+    sidebar:SetPoint("BOTTOMLEFT", ConsumeTracker_MainFrame, "BOTTOMLEFT", 5, 5)
+
+    -- Content Background
     local background = ConsumeTracker_MainFrame:CreateTexture(nil, "BACKGROUND")
     background:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Background")
-    background:SetPoint("TOPLEFT", ConsumeTracker_MainFrame, "TOPLEFT", 12, -12)
-    background:SetPoint("BOTTOMRIGHT", ConsumeTracker_MainFrame, "BOTTOMRIGHT", -12, 12)
+    background:SetPoint("TOPLEFT", ConsumeTracker_MainFrame, "TOPLEFT", 185, -5)
+    background:SetPoint("BOTTOMRIGHT", ConsumeTracker_MainFrame, "BOTTOMRIGHT", -5, 5)
 
-    -- Border
+    -- Border (Removed edgeFile for borderless look)
     ConsumeTracker_MainFrame:SetBackdrop({
         bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-        tile = true, tileSize = 32, edgeSize = 32,
-        insets = { left = 11, right = 12, top = 12, bottom = 11 }
+        tile = true, tileSize = 32,
+        insets = { left = 5, right = 5, top = 5, bottom = 5 }
     })
     ConsumeTracker_MainFrame:SetBackdropColor(0.1, 0.1, 0.1, 1)
 
@@ -485,19 +528,15 @@ function ConsumeTracker_CreateMainWindow()
 
 
     -- Title Text
-    local titleText = ConsumeTracker_MainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    titleText:SetText("ConsumeTracker")
-    titleText:SetPoint("TOP", ConsumeTracker_MainFrame, "TOP", 0, -2)
+    local titleText = ConsumeTracker_MainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    titleText:SetText("Nightfall Raid Tools")
+    titleText:SetPoint("TOP", ConsumeTracker_MainFrame, "TOPLEFT", 90, -16) -- Adjusted padding (-10 to -16)
+    titleText:SetTextColor(1, 0.82, 0)
 
     -- Calculate the width of the title text and adjust the title background accordingly
     local titleWidth = titleText:GetStringWidth() + 200 
-
-    -- Title Background
-    local titleBg = ConsumeTracker_MainFrame:CreateTexture(nil, "ARTWORK")
-    titleBg:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
-    titleBg:SetWidth(titleWidth)
-    titleBg:SetHeight(64)
-    titleBg:SetPoint("TOP", ConsumeTracker_MainFrame, "TOP", 0, 12)
+    
+    -- Title Background (REMOVED)
 
     -- Close Button
     local closeButton = CreateFrame("Button", nil, ConsumeTracker_MainFrame, "UIPanelCloseButton")
@@ -530,91 +569,99 @@ function ConsumeTracker_CreateMainWindow()
     -- Tabs
     local tabs = {}
     ConsumeTracker_Tabs = {}
-    -- Adjusted CreateTab function
-    local function CreateTab(name, texture, xOffset, tooltipText, tabIndex)
-        local tab = CreateFrame("Button", name, ConsumeTracker_MainFrame)
-        tab:SetWidth(36)
-        tab:SetHeight(36)
-        tab:SetPoint("TOPLEFT", ConsumeTracker_MainFrame, "TOPLEFT", xOffset, -30)
+    
+    -- =========================================================================================
+    -- Tab System Refactor: Hierarchy
+    -- Level 1: Sidebar Modules (Vertical) - "Consume Tracking"
+    -- Level 2: Sub-Tabs (Horizontal) - "Tracker", "Items", "Presets", "Settings"
+    -- =========================================================================================
 
-        -- Tab Icon
-        local icon = tab:CreateTexture(nil, "ARTWORK")
+    local sidebarModules = {}
+    ConsumeTracker_SidebarModules = {}
+    
+    local function CreateSidebarModule(name, texture, yOffset, labelText, moduleIndex)
+        local btn = CreateFrame("Button", name, ConsumeTracker_MainFrame)
+        btn:SetWidth(180) -- Sidebar width
+        btn:SetHeight(24) -- Reduced Height (30 -> 24)
+        btn:SetPoint("TOPLEFT", ConsumeTracker_MainFrame, "TOPLEFT", 5, yOffset) -- Adjusted X to 5 to match sidebar inset
+
+        -- Background (Highlight/Select)
+        local bg = btn:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints(btn)
+        bg:SetTexture("Interface\\Buttons\\WHITE8x8") -- Use solid white texture for gradient
+        bg:SetGradientAlpha("HORIZONTAL", 1, 0.82, 0, 0, 1, 0.82, 0, 0) -- Initially transparent
+        btn.bg = bg
+
+        -- Icon
+        local icon = btn:CreateTexture(nil, "ARTWORK")
         icon:SetTexture(texture)
-        icon:SetWidth(36)
-        icon:SetHeight(36)
-        icon:SetPoint("CENTER", tab, "CENTER", 0, 0)
-        tab.icon = icon
+        icon:SetWidth(18) -- Reduced icon size (20 -> 18)
+        icon:SetHeight(18)
+        icon:SetPoint("LEFT", btn, "LEFT", 10, 0)
+        btn.icon = icon
 
-        -- Hover Glow
-        local hoverTexture = tab:CreateTexture(nil, "HIGHLIGHT")
-        hoverTexture:SetTexture("Interface\\Buttons\\CheckButtonHilight")
-        hoverTexture:SetBlendMode("ADD")
-        hoverTexture:SetAllPoints(tab)
-        tab.hoverTexture = hoverTexture  -- Store hoverTexture in tab
+        -- Label
+        local label = btn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        label:SetPoint("LEFT", icon, "RIGHT", 10, 0)
+        label:SetText(labelText)
+        label:SetTextColor(1, 0.82, 0) 
+        btn.label = label
 
-        -- Active Highlight
-        local activeHighlight = tab:CreateTexture(nil, "OVERLAY")
-        activeHighlight:SetTexture("Interface\\Buttons\\CheckButtonHilight")
-        activeHighlight:SetBlendMode("ADD")
-        activeHighlight:SetAllPoints(tab)
-        activeHighlight:SetWidth(36)
-        activeHighlight:SetHeight(36)
-        activeHighlight:Hide()
-        tab.activeHighlight = activeHighlight
+        -- Active Indicator Bar
+        local activeBar = btn:CreateTexture(nil, "OVERLAY")
+        activeBar:SetTexture(1, 0.82, 0, 1)
+        activeBar:SetWidth(3) -- Slightly thinner bar
+        activeBar:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
+        activeBar:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
+        activeBar:Hide()
+        btn.activeBar = activeBar
 
-        -- Store tooltip text
-        tab.tooltipText = tooltipText
-
-        -- Custom Tooltip Handlers
-        tab:SetScript("OnEnter", function()
-            ShowTooltip(tab, tab.tooltipText)
+        btn:SetScript("OnClick", function()
+            ConsumeTracker_ShowModule(moduleIndex)
         end)
-        tab:SetScript("OnLeave", HideTooltip)
 
-        -- Initialize as enabled
-        tab.isEnabled = true
+        ConsumeTracker_SidebarModules[moduleIndex] = btn
+        return btn
+    end
 
-        -- Store tab in global table
-        ConsumeTracker_Tabs[tabIndex] = tab
+    local function CreateSubTab(parent, id, text, xOffset)
+        local tab = CreateFrame("Button", "ConsumeTracker_SubTab_" .. id, parent)
+        tab:SetWidth(100)
+        tab:SetHeight(24)
+        tab:SetPoint("TOPLEFT", parent, "TOPLEFT", xOffset, -40) -- Positioned below title area roughly
 
+        -- Text
+        local tabText = tab:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        tabText:SetPoint("CENTER", tab, "CENTER", 0, 0)
+        tabText:SetText(text)
+        tabText:SetTextColor(0.6, 0.6, 0.6) -- Default Gray
+        tab.text = tabText
+
+        -- Active Indicator (Bottom Line)
+        local activeLine = tab:CreateTexture(nil, "OVERLAY")
+        -- activeLine:SetTexture(1, 0.82, 0, 1)
+        activeLine:SetHeight(2)
+        activeLine:SetPoint("BOTTOMLEFT", tab, "BOTTOMLEFT", 0, 0)
+        activeLine:SetPoint("BOTTOMRIGHT", tab, "BOTTOMRIGHT", 0, 0)
+        activeLine:Hide()
+        tab.activeLine = activeLine
+
+        tab:SetScript("OnClick", function()
+            ConsumeTracker_ShowSubTab(id)
+        end)
+        
         return tab
     end
 
-   
+    -- Create "Consume Tracking" Sidebar Module
+    local module1 = CreateSidebarModule("ConsumeTracker_Module1", "Interface\\AddOns\\ConsumeTracker\\images\\minimap_icon", -50, "Consume Tracking", 1)
 
-    -- Manager Tab
-    local tab1 = CreateTab("ConsumeTracker_MainFrameTab1", "Interface\\AddOns\\ConsumeTracker\\images\\minimap_icon", 30, "Tracker", 1)
-    tab1.originalOnClick = function()
-        ConsumeTracker_ShowTab(1)
-    end
-    tab1:SetScript("OnClick", tab1.originalOnClick)
-
-    -- Items Tab
-    local tab2 = CreateTab("ConsumeTracker_MainFrameTab2", "Interface\\Icons\\Inv_misc_book_03", 80, "Items", 2)
-    tab2.originalOnClick = function()
-        ConsumeTracker_ShowTab(2)
-    end
-    tab2:SetScript("OnClick", tab2.originalOnClick)
-
-    -- Presets Tab
-    local tab3 = CreateTab("ConsumeTracker_MainFrameTab3", "Interface\\Icons\\inv_misc_note_06", 130, "Presets", 3)
-    tab3.originalOnClick = function()
-        ConsumeTracker_ShowTab(3)
-    end
-    tab3:SetScript("OnClick", tab3.originalOnClick)
-
-    -- Settings Tab
-    local tab4 = CreateTab("ConsumeTracker_MainFrameTab4", "Interface\\Icons\\INV_Misc_Gear_01", 180, "Settings", 4)
-    tab4.originalOnClick = function()
-        ConsumeTracker_ShowTab(4)
-    end
-    tab4:SetScript("OnClick", tab4.originalOnClick)
-
-
-    -- Send Data Button
-    sendDataButton = CreateTab("ConsumeTracker_sendDataButton", "Interface\\Icons\\inv_misc_punchcards_prismatic", 280, "Push Data", 5)
+    -- Send Data Button (Still in sidebar, but at bottom)
+    sendDataButton = CreateSidebarModule("ConsumeTracker_sendDataButton", "Interface\\Icons\\inv_misc_punchcards_prismatic", -400, "Push Data", 99)
+    sendDataButton:SetPoint("BOTTOMLEFT", ConsumeTracker_MainFrame, "BOTTOMLEFT", 0, 40)
+    
     function updateSenDataButtonState()
-        if ConsumeTracker_Options.Channel == nil or ConsumeTracker_Options.Channel == "" or ConsumeTracker_Options.Password == nil or ConsumeTracker_Options.Password == "" then
+         if ConsumeTracker_Options.Channel == nil or ConsumeTracker_Options.Channel == "" or ConsumeTracker_Options.Password == nil or ConsumeTracker_Options.Password == "" then
             sendDataButton:Hide()
             ReadData("stop")
         else
@@ -623,69 +670,92 @@ function ConsumeTracker_CreateMainWindow()
         end
     end
     updateSenDataButtonState()
-    sendDataButton.originalOnClick = function()
-        PushData()
-    end
-    sendDataButton:SetScript("OnClick", sendDataButton.originalOnClick)
+    sendDataButton:SetScript("OnClick", function() PushData() end)
 
+    -- Module Content Frames
+    ConsumeTracker_MainFrame.modules = {}
+    
+    -- Consume Tracking Content Frame (Container for the sub-tabs)
+    local module1Content = CreateFrame("Frame", nil, ConsumeTracker_MainFrame)
+    module1Content:SetPoint("TOPLEFT", ConsumeTracker_MainFrame, "TOPLEFT", 185, -5) -- Right of sidebar
+    module1Content:SetPoint("BOTTOMRIGHT", ConsumeTracker_MainFrame, "BOTTOMRIGHT", -5, 5)
+    module1Content:Hide()
+    ConsumeTracker_MainFrame.modules[1] = module1Content
 
-    -- Add Grey Line Under Tabs
-    local tabsLine = ConsumeTracker_MainFrame:CreateTexture(nil, "ARTWORK")
-    tabsLine:SetHeight(1)
-    tabsLine:SetPoint("TOPLEFT", ConsumeTracker_MainFrame, "TOPLEFT", 12, -72)
-    tabsLine:SetPoint("TOPRIGHT", ConsumeTracker_MainFrame, "TOPRIGHT", -12, -72)
-    tabsLine:SetTexture("Interface\\Buttons\\WHITE8x8")
-    tabsLine:SetVertexColor(0.4, 0.4, 0.4, 1)
+    -- Module Header Title
+    local module1Title = module1Content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    module1Title:SetText("Consume Tracking")
+    module1Title:SetPoint("TOPLEFT", module1Content, "TOPLEFT", 10, -10)
+    module1Title:SetTextColor(1, 0.82, 0) -- Gold
 
-    -- Tab Content
+    -- Create Sub Tabs
+    local subTabs = {}
+    subTabs[1] = CreateSubTab(module1Content, 1, "Tracker", 10)
+    subTabs[2] = CreateSubTab(module1Content, 2, "Items", 115)
+    subTabs[3] = CreateSubTab(module1Content, 3, "Presets", 220)
+    subTabs[4] = CreateSubTab(module1Content, 4, "Settings", 325)
+    
+    module1Content.subTabs = subTabs
+
+    -- Sub-Tab Content Frames
+    module1Content.tabFrames = {}
+    
+    -- Common Content Rect
+    local contentWidth = 590 
+    local contentHeight = 420 -- Reduced height due to tabs on top
+    local contentX = 10
+    local contentY = -70 -- Below horizontal tabs
+
+    -- Tab 1: Tracker Content
+    local tab1Frame = CreateFrame("Frame", nil, module1Content)
+    tab1Frame:SetWidth(contentWidth)
+    tab1Frame:SetHeight(contentHeight)
+    tab1Frame:SetPoint("TOPLEFT", module1Content, "TOPLEFT", contentX, contentY)
+    tab1Frame:Hide() -- Hide by default
+    module1Content.tabFrames[1] = tab1Frame
+
+    -- Tab 2: Items Content
+    local tab2Frame = CreateFrame("Frame", nil, module1Content)
+    tab2Frame:SetWidth(contentWidth)
+    tab2Frame:SetHeight(contentHeight)
+    tab2Frame:SetPoint("TOPLEFT", module1Content, "TOPLEFT", contentX, contentY)
+    tab2Frame:Hide() -- Hide by default
+    module1Content.tabFrames[2] = tab2Frame
+
+    -- Tab 3: Presets Content
+    local tab3Frame = CreateFrame("Frame", nil, module1Content)
+    tab3Frame:SetWidth(contentWidth)
+    tab3Frame:SetHeight(contentHeight)
+    tab3Frame:SetPoint("TOPLEFT", module1Content, "TOPLEFT", contentX, contentY)
+    tab3Frame:Hide() -- Hide by default
+    module1Content.tabFrames[3] = tab3Frame
+
+    -- Tab 4: Settings Content
+    local tab4Frame = CreateFrame("Frame", nil, module1Content)
+    tab4Frame:SetWidth(contentWidth)
+    tab4Frame:SetHeight(contentHeight)
+    tab4Frame:SetPoint("TOPLEFT", module1Content, "TOPLEFT", contentX, contentY)
+    tab4Frame:Hide() -- Hide by default
+    module1Content.tabFrames[4] = tab4Frame
+
+    -- Map old structure for compatibility if needed (temporarily)
     ConsumeTracker_MainFrame.tabs = {}
-    local tab1Content = CreateFrame("Frame", nil, ConsumeTracker_MainFrame)
-    tab1Content:SetWidth(WindowWidth - 50)
-    tab1Content:SetHeight(380)
-    tab1Content:SetPoint("TOPLEFT", ConsumeTracker_MainFrame, "TOPLEFT", 30, -80)
-    ConsumeTracker_MainFrame.tabs[1] = tab1Content
-
-    local tab2Content = CreateFrame("Frame", nil, ConsumeTracker_MainFrame)
-    tab2Content:SetWidth(WindowWidth - 50)
-    tab2Content:SetHeight(380)
-    tab2Content:SetPoint("TOPLEFT", ConsumeTracker_MainFrame, "TOPLEFT", 30, -80)
-    ConsumeTracker_MainFrame.tabs[2] = tab2Content
-
-    local tab3Content = CreateFrame("Frame", nil, ConsumeTracker_MainFrame)
-    tab3Content:SetWidth(WindowWidth - 50)
-    tab3Content:SetHeight(380)
-    tab3Content:SetPoint("TOPLEFT", ConsumeTracker_MainFrame, "TOPLEFT", 30, -80)
-    ConsumeTracker_MainFrame.tabs[3] = tab3Content
-
-    local tab4Content = CreateFrame("Frame", nil, ConsumeTracker_MainFrame)
-    tab4Content:SetWidth(WindowWidth - 50)
-    tab4Content:SetHeight(380)
-    tab4Content:SetPoint("TOPLEFT", ConsumeTracker_MainFrame, "TOPLEFT", 30, -80)
-    ConsumeTracker_MainFrame.tabs[4] = tab4Content
+    ConsumeTracker_MainFrame.tabs[1] = tab1Frame 
+    ConsumeTracker_MainFrame.tabs[2] = tab2Frame
+    ConsumeTracker_MainFrame.tabs[3] = tab3Frame
+    ConsumeTracker_MainFrame.tabs[4] = tab4Frame
 
     -- Footer Button to Push Database
     local footerText = ConsumeTracker_MainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     footerText:SetText("Made by Astraeya (v" .. GetAddOnMetadata("ConsumeTracker", "Version") .. ")")
     footerText:SetTextColor(0.6, 0.6, 0.6)
-    footerText:SetPoint("BOTTOM", ConsumeTracker_MainFrame, "BOTTOM", 0, 15)
-
-
-    -- Add Grey Line Above Footer
-    local footerLine = ConsumeTracker_MainFrame:CreateTexture(nil, "ARTWORK")
-    footerLine:SetHeight(1)
-    footerLine:SetPoint("BOTTOMLEFT", ConsumeTracker_MainFrame, "BOTTOMLEFT", 12, 30)
-    footerLine:SetPoint("BOTTOMRIGHT", ConsumeTracker_MainFrame, "BOTTOMRIGHT", -12, 30)
-    footerLine:SetTexture("Interface\\Buttons\\WHITE8x8")
-    footerLine:SetVertexColor(0.4, 0.4, 0.4, 1)
-
-    -- Set Default Tab
-    ConsumeTracker_ShowTab(1)
+    footerText:SetPoint("BOTTOM", ConsumeTracker_MainFrame, "BOTTOM", 90, 10) -- Shifted right due to sidebar
 
     -- Add Custom Content for Tabs
-    ConsumeTracker_CreateManagerContent(tab1Content)
-    ConsumeTracker_CreateItemsContent(tab2Content)
-    ConsumeTracker_CreatePresetsContent(tab3Content)
-    ConsumeTracker_CreateSettingsContent(tab4Content)
+    ConsumeTracker_CreateManagerContent(tab1Frame)
+    ConsumeTracker_CreateItemsContent(tab2Frame)
+    ConsumeTracker_CreatePresetsContent(tab3Frame)
+    ConsumeTracker_CreateSettingsContent(tab4Frame)
 
     ConsumeTracker_UpdateTabStates()
 end
@@ -720,34 +790,71 @@ function ConsumeTracker_ShowMainWindow()
     ConsumeTracker_UpdateSettingsContent()
 end
 
-function ConsumeTracker_ShowTab(tabIndex)
-    if not ConsumeTracker_MainFrame or not ConsumeTracker_MainFrame.tabs then return end
-
-    -- Check if the tab is enabled
-    local tabButton = ConsumeTracker_Tabs[tabIndex]
-    if tabButton and not tabButton.isEnabled then
-        return  -- Do not switch to disabled tabs
+function ConsumeTracker_ShowModule(moduleIndex)
+    -- Hide all modules
+    for i, moduleFrame in pairs(ConsumeTracker_MainFrame.modules) do
+        moduleFrame:Hide()
+        if ConsumeTracker_SidebarModules[i] then
+            ConsumeTracker_SidebarModules[i].activeBar:Hide()
+            -- Reset to transparent gradient
+            ConsumeTracker_SidebarModules[i].bg:SetGradientAlpha("HORIZONTAL", 1, 0.82, 0, 0, 1, 0.82, 0, 0)
+        end
     end
 
-    for i, tabContent in pairs(ConsumeTracker_MainFrame.tabs) do
+    -- Show selected
+    local selectedModule = ConsumeTracker_MainFrame.modules[moduleIndex]
+    if selectedModule then
+        selectedModule:Show()
+        if ConsumeTracker_SidebarModules[moduleIndex] then
+            ConsumeTracker_SidebarModules[moduleIndex].activeBar:Show()
+            -- Set to visible gradient: Left=Gold(0.5 alpha), Right=Gold(0 alpha) 
+            ConsumeTracker_SidebarModules[moduleIndex].bg:SetGradientAlpha("HORIZONTAL", 1, 0.82, 0, 0.5, 1, 0.82, 0, 0)
+        end
+        
+        -- Force update sub-tabs if this module has them (Module 1)
+        if moduleIndex == 1 then
+            ConsumeTracker_ShowSubTab(1)
+        end
+    end
+end
+
+function ConsumeTracker_ShowSubTab(tabIndex)
+    -- We assume we are in Module 1 for now, as it's the only one with subtabs
+    local module1Content = ConsumeTracker_MainFrame.modules[1]
+    if not module1Content then return end
+
+    for i, tabFrame in pairs(module1Content.tabFrames) do
         if i == tabIndex then
-            tabContent:Show()
-            -- Set the tab button to active
-            local tabButton = ConsumeTracker_Tabs[i]
-            if tabButton then
-                tabButton:SetNormalTexture("Interface\\ItemsFrame\\UI-ItemsFrame-ActiveTab")
-                tabButton.activeHighlight:Show()
+            tabFrame:Show()
+            if module1Content.subTabs[i] then
+                -- Active: Yellow
+                module1Content.subTabs[i].text:SetTextColor(1, 0.82, 0)
             end
         else
-            tabContent:Hide()
-            -- Set the tab button to inactive
-            local tabButton = ConsumeTracker_Tabs[i]
-            if tabButton then
-                tabButton:SetNormalTexture("Interface\\ItemsFrame\\UI-ItemsFrame-InActiveTab")
-                tabButton.activeHighlight:Hide()
+            tabFrame:Hide()
+            if module1Content.subTabs[i] then
+                -- Inactive: Gray
+                module1Content.subTabs[i].text:SetTextColor(0.6, 0.6, 0.6)
             end
         end
     end
+
+    -- Trigger existing update functions based on tab
+    if tabIndex == 1 then
+        ConsumeTracker_UpdateManagerContent()
+    elseif tabIndex == 2 then
+        -- Update Items
+    elseif tabIndex == 3 then
+        ConsumeTracker_UpdatePresetsConsumables()
+    elseif tabIndex == 4 then
+        ConsumeTracker_UpdateSettingsContent()
+    end
+end
+
+-- Backward compatibility function if called elsewhere
+function ConsumeTracker_ShowTab(tabIndex)
+    ConsumeTracker_ShowModule(1)
+    ConsumeTracker_ShowSubTab(tabIndex)
 end
 
 
@@ -4854,11 +4961,11 @@ function ConsumeTracker_UpdateActionBar()
             timerText:Show()
             if timeLeft then
                 if timeLeft >= 3600 then
-                    timerText:SetText((timeLeft / 3600) + 0.5 .. "h")
+                    timerText:SetText(math.floor((timeLeft / 3600) + 0.5) .. "h")
                 elseif timeLeft >= 60 then
-                    timerText:SetText((timeLeft / 60) + 0.5 .. "m")
+                    timerText:SetText(math.floor((timeLeft / 60) + 0.5) .. "m")
                 else
-                    timerText:SetText((timeLeft) + 0.5 .. "s")
+                    timerText:SetText(math.floor(timeLeft + 0.5) .. "s")
                 end
             else
                 timerText:SetText("") -- Active but no time
