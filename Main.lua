@@ -904,59 +904,13 @@ function ConsumeTracker_CreateManagerContent(parentFrame)
 
     parentFrame.searchBox = trackerSearchBox
 
-    -- Create buttons for sorting
-    local orderByNameButton = CreateFrame("Button", "ConsumeTracker_OrderByNameButton", parentFrame, "UIPanelButtonTemplate")
-    orderByNameButton:SetWidth(100)
-    orderByNameButton:SetHeight(24)
-    orderByNameButton:SetText("Order by Name")
-    orderByNameButton:GetFontString():SetFont("Fonts\\FRIZQT__.TTF", 10, "NORMAL")
-    orderByNameButton:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", 0, -40)
-    orderByNameButton:SetScript("OnClick", function()
-        if ConsumeTracker_Options.sortOrder == "name" then
-            -- Toggle sort direction
-            if ConsumeTracker_Options.sortDirection == "asc" then
-                ConsumeTracker_Options.sortDirection = "desc"
-            else
-                ConsumeTracker_Options.sortDirection = "asc"
-            end
-        else
-            ConsumeTracker_Options.sortOrder = "name"
-            ConsumeTracker_Options.sortDirection = "asc"
-        end
-        ConsumeTracker_UpdateManagerContent()
-    end)
 
-    local orderByAmountButton = CreateFrame("Button", "ConsumeTracker_OrderByAmountButton", parentFrame, "UIPanelButtonTemplate")
-    orderByAmountButton:SetWidth(100)
-    orderByAmountButton:SetHeight(24)
-    orderByAmountButton:SetText("Order by Amount")
-    orderByAmountButton:GetFontString():SetFont("Fonts\\FRIZQT__.TTF", 10, "NORMAL")
-    orderByAmountButton:SetPoint("LEFT", orderByNameButton, "RIGHT", 10, 0)
-    orderByAmountButton:SetScript("OnClick", function()
-        if ConsumeTracker_Options.sortOrder == "amount" then
-            -- Toggle sort direction
-            if ConsumeTracker_Options.sortDirection == "desc" then
-                ConsumeTracker_Options.sortDirection = "asc"
-            else
-                ConsumeTracker_Options.sortDirection = "desc"
-            end
-        else
-            ConsumeTracker_Options.sortOrder = "amount"
-            ConsumeTracker_Options.sortDirection = "desc"
-        end
-        ConsumeTracker_UpdateManagerContent()
-    end)
 
-    parentFrame.orderByNameButton = orderByNameButton
-    parentFrame.orderByAmountButton = orderByAmountButton
 
-    -- Initially hide the order buttons
-    orderByNameButton:Hide()
-    orderByAmountButton:Hide()
 
     -- Scroll Frame
     local scrollFrame = CreateFrame("ScrollFrame", "ConsumeTracker_ManagerScrollFrame", parentFrame)
-    scrollFrame:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", 0, -75) -- Adjusted to be below the buttons and search
+    scrollFrame:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", 0, -35) -- Adjusted to be below the search box
     scrollFrame:SetPoint("BOTTOMRIGHT", parentFrame, "BOTTOMRIGHT", -20, 16)
     scrollFrame:EnableMouseWheel(true)
     scrollFrame:SetScript("OnMouseWheel", function()
@@ -1027,14 +981,45 @@ function ConsumeTracker_CreateManagerContent(parentFrame)
             itemFrame:SetHeight(lineHeight)
             itemFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, - (index) * lineHeight)
             itemFrame:Hide()
-            itemFrame:EnableMouse(true)  -- Enable mouse events for OnEnter and OnLeave
+            itemFrame:EnableMouse(true)
 
-            -- Create the 'Use' button inside the itemFrame
-            local useButton = CreateFrame("Button", "ConsumeTracker_UseButton" .. index, itemFrame, "UIPanelButtonTemplate")
-            useButton:SetWidth(40)
+            -- Create the 'Use' button inside the itemFrame (Custom Gold Theme)
+            local useButton = CreateFrame("Button", "ConsumeTracker_UseButton" .. index, itemFrame)
+            useButton:SetWidth(36)
             useButton:SetHeight(16)
             useButton:SetPoint("LEFT", itemFrame, "LEFT", 0, 0)
-            useButton:SetText("Use")
+            
+            useButton:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8x8",
+                edgeFile = "Interface\\Buttons\\WHITE8x8",
+                tile = false, tileSize = 0, edgeSize = 1,
+                insets = { left = 0, right = 0, top = 0, bottom = 0 }
+            })
+            useButton:SetBackdropColor(0, 0, 0, 0) 
+            useButton:SetBackdropBorderColor(1, 0.82, 0, 1) -- Gold border
+
+            local btnText = useButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            btnText:SetPoint("CENTER", useButton, "CENTER", 0, 0)
+            btnText:SetText("USE")
+            btnText:SetTextColor(1, 0.82, 0) -- Gold text
+            useButton.text = btnText
+
+            -- Hover Effects
+            useButton:SetScript("OnEnter", function()
+                if this:IsEnabled() == 1 then
+                    this:SetBackdropBorderColor(1, 1, 1, 1)
+                    this.text:SetTextColor(1, 1, 1)
+                end
+            end)
+            useButton:SetScript("OnLeave", function()
+                if this:IsEnabled() == 1 then
+                    this:SetBackdropBorderColor(1, 0.82, 0, 1)
+                    this.text:SetTextColor(1, 0.82, 0)
+                else
+                    this:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+                    this.text:SetTextColor(0.5, 0.5, 0.5)
+                end
+            end)
 
             -- Initially show or hide the use button based on settings
             if ConsumeTracker_Options.showUseButton then
@@ -1042,16 +1027,6 @@ function ConsumeTracker_CreateManagerContent(parentFrame)
             else
                 useButton:Hide()
             end
-
-            -- Create FontString for label
-            local label = itemFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-            if ConsumeTracker_Options.showUseButton then
-                label:SetPoint("LEFT", useButton, "RIGHT", 4, 0)
-            else
-                label:SetPoint("LEFT", itemFrame, "LEFT", 0, 0)
-            end
-            label:SetText(itemName)
-            label:SetJustifyH("LEFT")
 
             -- Set up the button OnClick handler
             useButton:SetScript("OnClick", function()
@@ -1063,8 +1038,38 @@ function ConsumeTracker_CreateManagerContent(parentFrame)
                 end
             end)
 
+            -- Item Icon
+            local icon = itemFrame:CreateTexture(nil, "ARTWORK")
+            icon:SetWidth(14)
+            icon:SetHeight(14)
+            -- Position relative to Use Button if shown, else left edge
+            if ConsumeTracker_Options.showUseButton then
+                icon:SetPoint("LEFT", useButton, "RIGHT", 4, 0)
+            else
+                icon:SetPoint("LEFT", itemFrame, "LEFT", 0, 0)
+            end
+            
+            -- Try fetching texture
+            local _, _, _, _, _, _, _, _, _, itemTexture = GetItemInfo(itemID)
+            if not itemTexture and consumable.texture then itemTexture = consumable.texture end
+            if not itemTexture then itemTexture = "Interface\\Icons\\INV_Misc_QuestionMark" end
+            icon:SetTexture(itemTexture)
+            
+            -- Item Name Label
+            local label = itemFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+            label:SetPoint("LEFT", icon, "RIGHT", 4, 0)
+            label:SetText(itemName)
+            label:SetJustifyH("LEFT")
+
+            -- Quantity Label
+            local qtyLabel = itemFrame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            qtyLabel:SetPoint("RIGHT", itemFrame, "RIGHT", -20, 0)
+            qtyLabel:SetText("")
+
             -- Initialize button state
             useButton:Disable()
+            useButton:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+            btnText:SetTextColor(0.5, 0.5, 0.5)
 
             -- Mouseover Tooltip
             itemFrame:SetScript("OnEnter", function()
@@ -1080,6 +1085,8 @@ function ConsumeTracker_CreateManagerContent(parentFrame)
             table.insert(categoryInfo.Items, {
                 frame = itemFrame,
                 label = label,
+                qtyLabel = qtyLabel,
+                icon = icon,
                 name = itemName,
                 itemID = itemID,
                 button = useButton
@@ -1113,7 +1120,7 @@ function ConsumeTracker_CreateManagerContent(parentFrame)
     -- Scroll Bar
     -- Scroll Bar (Minimalist)
     local scrollBar = CreateFrame("Slider", "ConsumeTracker_ManagerScrollBar", parentFrame)
-    scrollBar:SetPoint("TOPRIGHT", parentFrame, "TOPRIGHT", -5, -75) 
+    scrollBar:SetPoint("TOPRIGHT", parentFrame, "TOPRIGHT", -5, -35) 
     scrollBar:SetPoint("BOTTOMRIGHT", parentFrame, "BOTTOMRIGHT", -5, 10)
     scrollBar:SetWidth(6)
     scrollBar:SetOrientation('VERTICAL')
@@ -1164,8 +1171,7 @@ function ConsumeTracker_UpdateManagerContent()
     
     -- Hide the message label and order buttons by default
     ManagerFrame.messageLabel:Hide()
-    ManagerFrame.orderByNameButton:Hide()
-    ManagerFrame.orderByAmountButton:Hide()
+
 
     -- Hide all item frames and category labels
     for _, categoryInfo in ipairs(ManagerFrame.categoryInfo) do
@@ -1267,40 +1273,53 @@ function ConsumeTracker_UpdateManagerContent()
                     local itemID = itemInfo.itemID
                     local itemName = itemInfo.name
                     local label = itemInfo.label
+                    local qtyLabel = itemInfo.qtyLabel
+                    local icon = itemInfo.icon
                     local button = itemInfo.button
                     local frame = itemInfo.frame
                     local totalCount = itemData.totalCount
 
-                    -- Update label text with counts
-                    label:SetText(itemName .. " (" .. totalCount .. ")")
+                    -- Update label text (Name only) and color
+                    label:SetText(itemName)
+                    label:SetTextColor(1, 1, 1)
 
-                    -- Adjust label color based on count
+                    -- Update Quantity Label
+                    qtyLabel:SetText(totalCount)
+
+                    -- Adjust quantity label color based on count
                     if totalCount == 0 then
-                        label:SetTextColor(1, 0, 0)  -- Red
+                        qtyLabel:SetTextColor(1, 0, 0)  -- Red
                     elseif totalCount < 10 then
-                        label:SetTextColor(1, 0.4, 0)  -- Orange
+                        qtyLabel:SetTextColor(1, 0.4, 0)  -- Orange
                     elseif totalCount <= 19 then
-                        label:SetTextColor(1, 0.85, 0)  -- Yellow
+                        qtyLabel:SetTextColor(1, 0.85, 0)  -- Yellow
                     else
-                        label:SetTextColor(0, 1, 0)  -- Green
+                        qtyLabel:SetTextColor(0, 1, 0)  -- Green
                     end
 
                     -- Enable or disable the 'Use' button based on whether the item is in the player's inventory
                     local playerInventory = ConsumeTracker_Data[realmName][playerName]["inventory"] or {}
                     local countInInventory = playerInventory[itemID] or 0
+                    local inBags = (countInInventory > 0)
 
                     if ConsumeTracker_Options.showUseButton then
                         button:Show()
-                        if countInInventory > 0 then
+                        if inBags then
                             button:Enable()
+                            button:SetBackdropBorderColor(1, 0.82, 0, 1) -- Gold
+                            button.text:SetTextColor(1, 0.82, 0)
                         else
                             button:Disable()
+                            button:SetBackdropBorderColor(0.5, 0.5, 0.5, 1) -- Gray
+                            button.text:SetTextColor(0.5, 0.5, 0.5)
                         end
-                        label:SetPoint("LEFT", button, "RIGHT", 4, 0)
+                        -- Align icon to button
+                        icon:SetPoint("LEFT", button, "RIGHT", 4, 0)
                     else
                         button:Disable()
                         button:Hide()
-                        label:SetPoint("LEFT", frame, "LEFT", 0, 0)
+                        -- Align icon to left edge
+                        icon:SetPoint("LEFT", frame, "LEFT", 0, 0)
                     end
 
                     -- Show and position the item frame
@@ -1371,40 +1390,53 @@ function ConsumeTracker_UpdateManagerContent()
             local itemID = itemInfo.itemID
             local itemName = itemInfo.name
             local label = itemInfo.label
+            local qtyLabel = itemInfo.qtyLabel
+            local icon = itemInfo.icon
             local button = itemInfo.button
             local frame = itemInfo.frame
             local totalCount = itemData.totalCount
 
-            -- Update label text with counts
-            label:SetText(itemName .. " (" .. totalCount .. ")")
+            -- Update label text (Name only) and color
+            label:SetText(itemName)
+            label:SetTextColor(1, 1, 1)
 
-            -- Adjust label color based on count
+            -- Update Quantity Label
+            qtyLabel:SetText(totalCount)
+
+            -- Adjust quantity label color based on count
             if totalCount == 0 then
-                label:SetTextColor(1, 0, 0)  -- Red
+                qtyLabel:SetTextColor(1, 0, 0)  -- Red
             elseif totalCount < 10 then
-                label:SetTextColor(1, 0.4, 0)  -- Orange
+                qtyLabel:SetTextColor(1, 0.4, 0)  -- Orange
             elseif totalCount <= 20 then
-                label:SetTextColor(1, 0.85, 0)  -- Yellow
+                qtyLabel:SetTextColor(1, 0.85, 0)  -- Yellow
             else
-                label:SetTextColor(0, 1, 0)  -- Green
+                qtyLabel:SetTextColor(0, 1, 0)  -- Green
             end
 
             -- Enable or disable the 'Use' button based on whether the item is in the player's inventory
             local playerInventory = ConsumeTracker_Data[realmName][playerName]["inventory"] or {}
             local countInInventory = playerInventory[itemID] or 0
+            local inBags = (countInInventory > 0)
 
-            if showUseButton then
+            if ConsumeTracker_Options.showUseButton then
                 button:Show()
-                if countInInventory > 0 then
+                if inBags then
                     button:Enable()
+                    button:SetBackdropBorderColor(1, 0.82, 0, 1) -- Gold
+                    button.text:SetTextColor(1, 0.82, 0)
                 else
                     button:Disable()
+                    button:SetBackdropBorderColor(0.5, 0.5, 0.5, 1) -- Gray
+                    button.text:SetTextColor(0.5, 0.5, 0.5)
                 end
-                label:SetPoint("LEFT", button, "RIGHT", 4, 0)
+                -- Align icon to button
+                icon:SetPoint("LEFT", button, "RIGHT", 4, 0)
             else
                 button:Disable()
                 button:Hide()
-                label:SetPoint("LEFT", frame, "LEFT", 0, 0)
+                -- Align icon to left edge
+                icon:SetPoint("LEFT", frame, "LEFT", 0, 0)
             end
 
             -- Show and position the item frame
@@ -1423,8 +1455,7 @@ function ConsumeTracker_UpdateManagerContent()
 
     if not hasAnyVisibleItems then
         -- Hide the order buttons
-        ManagerFrame.orderByNameButton:Hide()
-        ManagerFrame.orderByAmountButton:Hide()
+
         -- Show message when no items are selected
         ManagerFrame.messageLabel:SetText("|cffff0000No consumables selected|r\n\n|cffffffffClick on |rItems|cffffffff to get started|r")
         ManagerFrame.messageLabel:Show()
@@ -1437,8 +1468,7 @@ function ConsumeTracker_UpdateManagerContent()
         ConsumeTracker_UpdateManagerScrollBar()
     else
         -- Show the order buttons
-        ManagerFrame.orderByNameButton:Show()
-        ManagerFrame.orderByAmountButton:Show()
+
         -- Hide the message label as we have content to display
         ManagerFrame.messageLabel:Hide()
     end
