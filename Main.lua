@@ -631,7 +631,7 @@ function ConsumeTracker_CreateMainWindow()
         tab:SetPoint("TOPLEFT", parent, "TOPLEFT", xOffset, -40) -- Positioned below title area roughly
 
         -- Text
-        local tabText = tab:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        local tabText = tab:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         tabText:SetPoint("CENTER", tab, "CENTER", 0, 0)
         tabText:SetText(text)
         tabText:SetTextColor(0.6, 0.6, 0.6) -- Default Gray
@@ -681,6 +681,14 @@ function ConsumeTracker_CreateMainWindow()
     module1Content:SetPoint("BOTTOMRIGHT", ConsumeTracker_MainFrame, "BOTTOMRIGHT", -5, 5)
     module1Content:Hide()
     ConsumeTracker_MainFrame.modules[1] = module1Content
+
+    -- Module Header Background (Dark strip for Title + Tabs)
+    local headerBg = module1Content:CreateTexture(nil, "BACKGROUND")
+    headerBg:SetTexture(0.15, 0.15, 0.15, 0.8) -- Requested Dark Gray
+    headerBg:SetPoint("TOPLEFT", module1Content, "TOPLEFT", 0, -35) -- Shifted down below title
+    headerBg:SetPoint("TOPRIGHT", module1Content, "TOPRIGHT", 0, 0)
+    headerBg:SetHeight(34) -- Height to cover tabs
+    module1Content.headerBg = headerBg
 
     -- Module Header Title
     local module1Title = module1Content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
