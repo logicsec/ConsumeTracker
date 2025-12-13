@@ -2933,11 +2933,11 @@ function ConsumeTracker_CreateSettingsContent(parentFrame)
 
     -- Title
     local title = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, 0)
+    title:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -20) -- Added top padding
     title:SetText("Select Characters To Track")
     title:SetTextColor(1, 1, 1)
 
-    local startYOffset = -20
+    local startYOffset = -60
     local currentYOffset = startYOffset
 
     -- Track whether we have characters from each faction
@@ -3218,13 +3218,68 @@ function ConsumeTracker_CreateSettingsContent(parentFrame)
     multiAccountInfo:SetJustifyH("LEFT")
     currentYOffset = currentYOffset - lineHeight * 2
 
-    -- More Info Button
+    -- Helper to create Gold Button
+    local function CreateGoldButton(name, parent, text, width, height, point, relativeTo, relativePoint, xOfs, yOfs)
+        local btn = CreateFrame("Button", name, parent)
+        btn:SetWidth(width)
+        btn:SetHeight(height)
+        btn:SetPoint(point, relativeTo, relativePoint, xOfs, yOfs)
+        
+        btn:SetBackdrop({
+            bgFile = "Interface\\Buttons\\WHITE8x8",
+            edgeFile = "Interface\\Buttons\\WHITE8x8",
+            tile = false, tileSize = 0, edgeSize = 1,
+            insets = { left = 0, right = 0, top = 0, bottom = 0 }
+        })
+        btn:SetBackdropColor(0, 0, 0, 0.5) 
+        btn:SetBackdropBorderColor(1, 0.82, 0, 1) -- Gold border
+
+        local btnText = btn:CreateFontString(nil, "OVERLAY", "GameFontNormal") -- Normal font for these buttons
+        btnText:SetPoint("CENTER", btn, "CENTER", 0, 0)
+        btnText:SetText(text)
+        btnText:SetTextColor(1, 0.82, 0) -- Gold text
+        btn.text = btnText
+
+        -- Hover Effects
+        btn:SetScript("OnEnter", function()
+            if this:IsEnabled() == 1 then
+                this:SetBackdropBorderColor(1, 1, 1, 1)
+                this.text:SetTextColor(1, 1, 1)
+            end
+        end)
+        btn:SetScript("OnLeave", function()
+            if this:IsEnabled() == 1 then
+                this:SetBackdropBorderColor(1, 0.82, 0, 1)
+                this.text:SetTextColor(1, 0.82, 0)
+            else
+                this:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+                this.text:SetTextColor(0.5, 0.5, 0.5)
+            end
+        end)
+        
+        -- Hook Enabe/Disable to update visual state immediately
+        local originalEnable = btn.Enable
+        local originalDisable = btn.Disable
+        
+        btn.Enable = function(self)
+            originalEnable(self)
+            self:SetBackdropBorderColor(1, 0.82, 0, 1)
+            self.text:SetTextColor(1, 0.82, 0)
+        end
+        
+        btn.Disable = function(self)
+            originalDisable(self)
+            self:SetBackdropBorderColor(0.5, 0.5, 0.5, 1)
+            self.text:SetTextColor(0.5, 0.5, 0.5)
+        end
+
+        return btn
+    end
+
+    -- More Info Button (Next to BETA!)
     local popup = MultiAccountInfoPopup()
-    local MoreInfoBtn = CreateFrame("Button", "ConsumeTracker_MoreInfoBtn", scrollChild, "UIPanelButtonTemplate")
-    MoreInfoBtn:SetWidth(70)
-    MoreInfoBtn:SetHeight(20)
-    MoreInfoBtn:SetText("More Info")
-    MoreInfoBtn:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, currentYOffset)
+    local MoreInfoBtn = CreateGoldButton("ConsumeTracker_MoreInfoBtn", scrollChild, "More Info", 60, 16, "LEFT", multiAccountTitle, "RIGHT", 10, 0)
+    MoreInfoBtn.text:SetFontObject("GameFontNormalSmall") -- Match Use button font size
     MoreInfoBtn:SetScript("OnClick", function()
         if popup:IsShown() then
             popup:Hide()
@@ -3232,7 +3287,7 @@ function ConsumeTracker_CreateSettingsContent(parentFrame)
             popup:Show()
         end
     end)
-    currentYOffset = currentYOffset - lineHeight - 10
+
 
     -- Channel Input
     local channelLabel = scrollChild:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -3325,28 +3380,19 @@ function ConsumeTracker_CreateSettingsContent(parentFrame)
     currentYOffset = currentYOffset - lineHeight - 10
 
     -- Join and Leave Channel Buttons
-    joinChannelButton = CreateFrame("Button", "ConsumeTracker_JoinChannelButton", scrollChild, "UIPanelButtonTemplate")
-    joinChannelButton:SetWidth(140)
-    joinChannelButton:SetHeight(24)
-    joinChannelButton:SetText("Save & Join Channel")
-    joinChannelButton:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, currentYOffset)
-
-    LeaveChannelButton = CreateFrame("Button", "ConsumeTracker_LeaveChannelButton", scrollChild, "UIPanelButtonTemplate")
-    LeaveChannelButton:SetWidth(140)
-    LeaveChannelButton:SetHeight(24)
-    LeaveChannelButton:SetText("Leave Channel")
-    LeaveChannelButton:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 140, currentYOffset)
+    joinChannelButton = CreateGoldButton("ConsumeTracker_JoinChannelButton", scrollChild, "Save & Join Channel", 140, 24, "TOPLEFT", scrollChild, "TOPLEFT", 0, currentYOffset)
+    LeaveChannelButton = CreateGoldButton("ConsumeTracker_LeaveChannelButton", scrollChild, "Leave Channel", 140, 24, "TOPLEFT", scrollChild, "TOPLEFT", 150, currentYOffset)
 
     -- Function to Update Leave Button State
     local function UpdateLeaveButtonState()
         if ConsumeTracker_Options.Channel == "" or ConsumeTracker_Options.Channel == nil then
             LeaveChannelButton:Disable()
-            LeaveChannelButton:SetAlpha(0.5)
+            -- LeaveChannelButton:SetAlpha(0.5) -- Handled by Disable override now
             channelEditBox:SetText("")
             passwordEditBox:SetText("")
         else
             LeaveChannelButton:Enable()
-            LeaveChannelButton:SetAlpha(1)
+            -- LeaveChannelButton:SetAlpha(1)
         end
     end
 
@@ -3382,10 +3428,10 @@ function ConsumeTracker_CreateSettingsContent(parentFrame)
         local ptext = passwordEditBox:GetText()
         if ctext ~= "" and ptext ~= "" then
             joinChannelButton:Enable()
-            joinChannelButton:SetAlpha(1)
+            -- joinChannelButton:SetAlpha(1)
         else
             joinChannelButton:Disable()
-            joinChannelButton:SetAlpha(0.5)
+            -- joinChannelButton:SetAlpha(0.5)
         end
     end
 
@@ -3413,11 +3459,7 @@ function ConsumeTracker_CreateSettingsContent(parentFrame)
     currentYOffset = currentYOffset - lineHeight * 2
 
     -- Reset Addon Button
-    resetButton = CreateFrame("Button", "ConsumeTracker_ResetButton", scrollChild, "UIPanelButtonTemplate")
-    resetButton:SetWidth(120)
-    resetButton:SetHeight(24)
-    resetButton:SetText("Reset Addon")
-    resetButton:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, currentYOffset)
+    resetButton = CreateGoldButton("ConsumeTracker_ResetButton", scrollChild, "Reset Addon", 120, 24, "TOPLEFT", scrollChild, "TOPLEFT", 0, currentYOffset)
     resetButton:SetScript("OnClick", function()
         if ConsumeTracker_Options.Channel then 
             local decoded_channel = DecodeMessage(ConsumeTracker_Options.Channel)
