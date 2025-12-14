@@ -80,25 +80,25 @@
         if cmd == "show" then
             ConsumeTracker_Options.showActionBar = true
             ConsumeTracker_UpdateActionBar()
-            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ConsumeTracker:|r Action Bar shown.")
+            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00Nightfall Raid Tools:|r Action Bar shown.")
         elseif cmd == "hide" then
             ConsumeTracker_Options.showActionBar = false
             ConsumeTracker_UpdateActionBar()
-            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ConsumeTracker:|r Action Bar hidden.")
+            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00Nightfall Raid Tools:|r Action Bar hidden.")
         elseif cmd == "reset" then
              ConsumeTracker_SetCharacterSetting("ActionBarPoint", nil)
              ConsumeTracker_SetCharacterSetting("ActionBarRelativePoint", nil)
              ConsumeTracker_SetCharacterSetting("ActionBarXOfs", nil)
              ConsumeTracker_SetCharacterSetting("ActionBarYOfs", nil)
              ConsumeTracker_RestoreActionBarPosition()
-             DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ConsumeTracker:|r Action Bar position reset.")
+             DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00Nightfall Raid Tools:|r Action Bar position reset.")
         elseif cmd == "menu" or cmd == "config" or cmd == "options" then
             ConsumeTracker_ShowMainWindow()
             if cmd == "config" or cmd == "options" then
                  ConsumeTracker_ShowTab(4) -- Go to Settings tab
             end
         else
-            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00ConsumeTracker Usage:|r")
+            DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00Nightfall Raid Tools Usage:|r")
             DEFAULT_CHAT_FRAME:AddMessage("/ct show  - Show the Action Bar")
             DEFAULT_CHAT_FRAME:AddMessage("/ct hide  - Hide the Action Bar")
             DEFAULT_CHAT_FRAME:AddMessage("/ct reset - Reset Action Bar position")
@@ -230,7 +230,7 @@
             ConsumeTracker_Options = ConsumeTracker_Options or {}
             
             -- Check if we've already shown the popup for this version
-            if not ConsumeTracker_Options.LastVersionReset or ConsumeTracker_Options.LastVersionReset ~= GetAddOnMetadata("ConsumeTracker", "Version") then
+            if not ConsumeTracker_Options.LastVersionReset or ConsumeTracker_Options.LastVersionReset ~= GetAddOnMetadata("NightfallRaidTools", "Version") then
                 -- Show the popup with a slight delay to ensure UI is loaded
                 local delayFrame = CreateFrame("Frame")
                 delayFrame:SetScript("OnUpdate", function()
@@ -266,10 +266,10 @@
                 local channelPassword = DecodeMessage(ConsumeTracker_Options.Password)
                 JoinChannelByName(channelName, channelPassword)
                 SetChannelPassword(channelName, channelPassword)
-                MultiAccountChannelAnnounce = "|cffffffff" .. GetAddOnMetadata("ConsumeTracker", "Title") .. ":|r |cffffffffJoined|r |cffffc0c0[" .. channelName .. "]|r|cffffffff. Multi-account synchronization |cff00ff00enabled|r|cffffffff.|r"
+                MultiAccountChannelAnnounce = "|cffffffff" .. GetAddOnMetadata("NightfallRaidTools", "Title") .. ":|r |cffffffffJoined|r |cffffc0c0[" .. channelName .. "]|r|cffffffff. Multi-account synchronization |cff00ff00enabled|r|cffffffff.|r"
                 ReadData("start")
             else
-                MultiAccountChannelAnnounce = "|cffffffff" .. GetAddOnMetadata("ConsumeTracker", "Title") .. ":|r Multi-account synchronization |cffff0000disabled|r|cffffffff. Check the addon options for setup.|r"
+                MultiAccountChannelAnnounce = "|cffffffff" .. GetAddOnMetadata("NightfallRaidTools", "Title") .. ":|r Multi-account synchronization |cffff0000disabled|r|cffffffff. Check the addon options for setup.|r"
                 ReadData("stop")
             end
 
@@ -280,7 +280,7 @@
             delayFrame:SetScript("OnUpdate", function()
                 elapsed = elapsed + arg1 -- arg1 provides the time since the last frame
                 if elapsed >= delay then
-                    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00" .. GetAddOnMetadata("ConsumeTracker", "Title") .. "|r |cffaaaaaa(v" .. GetAddOnMetadata("ConsumeTracker", "Version") .. ")|r |cffffffffLoaded!|r")
+                    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00" .. GetAddOnMetadata("NightfallRaidTools", "Title") .. "|r |cffaaaaaa(v" .. GetAddOnMetadata("NightfallRaidTools", "Version") .. ")|r |cffffffffLoaded!|r")
                     DEFAULT_CHAT_FRAME:AddMessage(MultiAccountChannelAnnounce)
                     delayFrame:SetScript("OnUpdate", nil) -- Stop the OnUpdate script
                 end
@@ -352,7 +352,7 @@ function ConsumeTracker_ShowVersionUpdatePopup()
     -- Add a title
     local title = popup:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOP", popup, "TOP", 0, -20)
-    title:SetText("ConsumeTracker Update " .. GetAddOnMetadata("ConsumeTracker", "Version"))
+    title:SetText("Nightfall Raid Tools Update " .. GetAddOnMetadata("NightfallRaidTools", "Version"))
     title:SetTextColor(1, 0.8, 0)
     
     -- Add a message
@@ -371,7 +371,7 @@ function ConsumeTracker_ShowVersionUpdatePopup()
     resetButton:SetScript("OnClick", function()
         -- Store that we've shown this version popup
         ConsumeTracker_Options = ConsumeTracker_Options or {}
-        ConsumeTracker_Options.LastVersionReset = GetAddOnMetadata("ConsumeTracker", "Version")
+        ConsumeTracker_Options.LastVersionReset = GetAddOnMetadata("NightfallRaidTools", "Version")
         
         -- Reset the addon data structures, preserving important settings
         local channelInfo = nil
@@ -407,7 +407,7 @@ function ConsumeTracker_ShowVersionUpdatePopup()
             Characters = characterOptions,
             enableCategories = enableCategories,
             showUseButton = showUseButton,
-            LastVersionReset = GetAddOnMetadata("ConsumeTracker", "Version")
+            LastVersionReset = GetAddOnMetadata("NightfallRaidTools", "Version")
         }
         
         ConsumeTracker_SelectedItems = selectedItems or {}
@@ -438,7 +438,7 @@ function ConsumeTracker_ShowVersionUpdatePopup()
     skipButton:SetScript("OnClick", function()
         -- Store that we've shown this version popup even if they didn't reset
         ConsumeTracker_Options = ConsumeTracker_Options or {}
-        ConsumeTracker_Options.LastVersionReset = GetAddOnMetadata("ConsumeTracker", "Version")
+        ConsumeTracker_Options.LastVersionReset = GetAddOnMetadata("NightfallRaidTools", "Version")
         popup:Hide()
     end)
     
@@ -624,207 +624,42 @@ function ConsumeTracker_CreateMainWindow()
         return btn
     end
 
-    local function CreateSubTab(parent, id, text, xOffset)
-        local tab = CreateFrame("Button", "ConsumeTracker_SubTab_" .. id, parent)
-        tab:SetWidth(100)
-        tab:SetHeight(24)
-        tab:SetPoint("TOPLEFT", parent, "TOPLEFT", xOffset, -40) -- Positioned below title area roughly
-
-        -- Text
-        local tabText = tab:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        tabText:SetPoint("CENTER", tab, "CENTER", 0, 0)
-        tabText:SetText(text)
-        tabText:SetTextColor(0.6, 0.6, 0.6) -- Default Gray
-        tab.text = tabText
-
-        -- Active Indicator (Bottom Line)
-        local activeLine = tab:CreateTexture(nil, "OVERLAY")
-        -- activeLine:SetTexture(1, 0.82, 0, 1)
-        activeLine:SetHeight(2)
-        activeLine:SetPoint("BOTTOMLEFT", tab, "BOTTOMLEFT", 0, 0)
-        activeLine:SetPoint("BOTTOMRIGHT", tab, "BOTTOMRIGHT", 0, 0)
-        activeLine:Hide()
-        tab.activeLine = activeLine
-
-        tab:SetScript("OnClick", function()
-            ConsumeTracker_ShowSubTab(id)
-        end)
-        
-        return tab
-    end
-
-    -- Create "Consume Tracking" Sidebar Module
-    local module1 = CreateSidebarModule("ConsumeTracker_Module1", "Interface\\AddOns\\ConsumeTracker\\images\\minimap_icon", -50, "Consume Tracking", 1)
-
-    -- Send Data Button placeholder - will be created after module1Content
-    -- (moved to after subTabs creation)
-
-    -- Module Content Frames
-    ConsumeTracker_MainFrame.modules = {}
-    
-    -- Consume Tracking Content Frame (Container for the sub-tabs)
-    local module1Content = CreateFrame("Frame", nil, ConsumeTracker_MainFrame)
-    module1Content:SetPoint("TOPLEFT", ConsumeTracker_MainFrame, "TOPLEFT", 185, -5) -- Right of sidebar
-    module1Content:SetPoint("BOTTOMRIGHT", ConsumeTracker_MainFrame, "BOTTOMRIGHT", -5, 5)
-    module1Content:Hide()
-    ConsumeTracker_MainFrame.modules[1] = module1Content
-
-    -- Module Header Background (Dark strip for Title + Tabs)
-    local headerBg = module1Content:CreateTexture(nil, "BACKGROUND")
-    headerBg:SetTexture(0.15, 0.15, 0.15, 0.8) -- Requested Dark Gray
-    headerBg:SetPoint("TOPLEFT", module1Content, "TOPLEFT", 0, -35) -- Shifted down below title
-    headerBg:SetPoint("TOPRIGHT", module1Content, "TOPRIGHT", 0, 0)
-    headerBg:SetHeight(34) -- Height to cover tabs
-    module1Content.headerBg = headerBg
-
-    -- Module Header Title
-    local module1Title = module1Content:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    module1Title:SetText("Consume Tracking")
-    module1Title:SetPoint("TOPLEFT", module1Content, "TOPLEFT", 10, -10)
-    module1Title:SetTextColor(1, 0.82, 0) -- Gold
-
-    -- Create Sub Tabs
-    local subTabs = {}
-    subTabs[1] = CreateSubTab(module1Content, 1, "Tracker", 10)
-    subTabs[2] = CreateSubTab(module1Content, 2, "Items", 115)
-    subTabs[3] = CreateSubTab(module1Content, 3, "Presets", 220)
-    subTabs[4] = CreateSubTab(module1Content, 4, "Settings", 325)
-    
-    module1Content.subTabs = subTabs
-
-    -- Send Data Button (in header, right-justified) - Green box style
-    sendDataButton = CreateFrame("Button", "ConsumeTracker_sendDataButton", module1Content)
-    sendDataButton:SetWidth(50)
-    sendDataButton:SetHeight(18)
-    sendDataButton:SetPoint("TOPRIGHT", module1Content, "TOPRIGHT", -10, -43) -- Right-justified
-    
-    -- Transparent box with green border outline
-    sendDataButton:SetBackdrop({
-        bgFile = "Interface\\Buttons\\WHITE8x8",
-        edgeFile = "Interface\\Buttons\\WHITE8x8",
-        tile = false, tileSize = 0, edgeSize = 1,
-        insets = { left = 0, right = 0, top = 0, bottom = 0 }
-    })
-    sendDataButton:SetBackdropColor(0, 0, 0, 0) -- Transparent background
-    sendDataButton:SetBackdropBorderColor(0.2, 0.5, 0.4, 1) -- Green border
-    
-    -- White centered text (no shadow)
-    local sendText = sendDataButton:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    sendText:SetFont("Fonts\\ARIALN.TTF", 9)  -- Cleaner font at small size
-    sendText:SetPoint("CENTER", sendDataButton, "CENTER", 0, 0)
-    sendText:SetText("Sync")
-    sendText:SetTextColor(1, 1, 1) -- White text
-    sendText:SetShadowOffset(0, 0) -- Remove drop shadow
-    sendDataButton.text = sendText
-    
-    -- Mini progress bar inside button (hidden by default)
-    local miniProgressBar = sendDataButton:CreateTexture(nil, "ARTWORK")
-    miniProgressBar:SetTexture("Interface\\Buttons\\WHITE8x8")
-    miniProgressBar:SetVertexColor(0.2, 0.7, 0.4, 1) -- Green fill
-    miniProgressBar:SetPoint("LEFT", sendDataButton, "LEFT", 2, 0)
-    miniProgressBar:SetHeight(14)
-    miniProgressBar:SetWidth(0) -- Start with 0 width
-    miniProgressBar:Hide()
-    sendDataButton.progressBar = miniProgressBar
-    
-    -- Checkmark text (hidden by default)
-    -- Checkmark texture (hidden by default)
-    local checkmark = sendDataButton:CreateTexture(nil, "OVERLAY")
-    checkmark:SetTexture("Interface\\AddOns\\ConsumeTracker\\images\\checkmark.tga")
-    checkmark:SetVertexColor(1, 1, 1, 1) -- Pure white, full opacity
-    checkmark:SetBlendMode("BLEND") -- Ensure alpha transparency works
-    checkmark:SetWidth(14)
-    checkmark:SetHeight(14)
-    checkmark:SetPoint("CENTER", sendDataButton, "CENTER", 0, 0)
-    checkmark:Hide()
-    sendDataButton.checkmark = checkmark
-    
-    -- Hover effects (only when not syncing)
-    sendDataButton:SetScript("OnEnter", function()
-        if sendDataButton.isSyncing then return end
-        this:SetBackdropColor(0.2, 0.5, 0.4, 0.2) -- Slight green tint on hover
-        this:SetBackdropBorderColor(0.3, 0.7, 0.5, 1) -- Brighter border
-    end)
-    sendDataButton:SetScript("OnLeave", function()
-        if sendDataButton.isSyncing then return end
-        this:SetBackdropColor(0, 0, 0, 0) -- Transparent background
-        this:SetBackdropBorderColor(0.2, 0.5, 0.4, 1) -- Normal green border
-    end)
-    
-    sendDataButton:SetScript("OnClick", function() PushData() end)
-    
-    function updateSenDataButtonState()
-        if ConsumeTracker_Options.Channel == nil or ConsumeTracker_Options.Channel == "" or ConsumeTracker_Options.Password == nil or ConsumeTracker_Options.Password == "" then
-            sendDataButton:Hide()
-            ReadData("stop")
-        else
-            sendDataButton:Show()
-            ReadData("start")
-        end
-    end
-    updateSenDataButtonState()
-
-    -- Sub-Tab Content Frames
-    module1Content.tabFrames = {}
-    
-    -- Common Content Rect
-    local contentWidth = 590 
-    local contentHeight = 420 -- Reduced height due to tabs on top
-    local contentX = 10
-    local contentY = -70 -- Below horizontal tabs
-
-    -- Tab 1: Tracker Content
-    local tab1Frame = CreateFrame("Frame", nil, module1Content)
-    tab1Frame:SetWidth(contentWidth)
-    tab1Frame:SetHeight(contentHeight)
-    tab1Frame:SetPoint("TOPLEFT", module1Content, "TOPLEFT", contentX, contentY)
-    tab1Frame:Hide() -- Hide by default
-    module1Content.tabFrames[1] = tab1Frame
-
-    -- Tab 2: Items Content
-    local tab2Frame = CreateFrame("Frame", nil, module1Content)
-    tab2Frame:SetWidth(contentWidth)
-    tab2Frame:SetHeight(contentHeight)
-    tab2Frame:SetPoint("TOPLEFT", module1Content, "TOPLEFT", contentX, contentY)
-    tab2Frame:Hide() -- Hide by default
-    module1Content.tabFrames[2] = tab2Frame
-
-    -- Tab 3: Presets Content
-    local tab3Frame = CreateFrame("Frame", nil, module1Content)
-    tab3Frame:SetWidth(contentWidth)
-    tab3Frame:SetHeight(contentHeight)
-    tab3Frame:SetPoint("TOPLEFT", module1Content, "TOPLEFT", contentX, contentY)
-    tab3Frame:Hide() -- Hide by default
-    module1Content.tabFrames[3] = tab3Frame
-
-    -- Tab 4: Settings Content
-    local tab4Frame = CreateFrame("Frame", nil, module1Content)
-    tab4Frame:SetWidth(contentWidth)
-    tab4Frame:SetHeight(contentHeight)
-    tab4Frame:SetPoint("TOPLEFT", module1Content, "TOPLEFT", contentX, contentY)
-    tab4Frame:Hide() -- Hide by default
-    module1Content.tabFrames[4] = tab4Frame
-
-    -- Map old structure for compatibility if needed (temporarily)
-    ConsumeTracker_MainFrame.tabs = {}
-    ConsumeTracker_MainFrame.tabs[1] = tab1Frame 
-    ConsumeTracker_MainFrame.tabs[2] = tab2Frame
-    ConsumeTracker_MainFrame.tabs[3] = tab3Frame
-    ConsumeTracker_MainFrame.tabs[4] = tab4Frame
-
+    -- Module 1 Content (Moves to ConsumeTracking module)
+    -- Content injection happens in Module:OnEnable()
     -- Footer Button to Push Database
     local footerText = ConsumeTracker_MainFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    footerText:SetText("Made by Astraeya (v" .. GetAddOnMetadata("ConsumeTracker", "Version") .. ")")
+    footerText:SetText("Made by Astraeya (v" .. GetAddOnMetadata("NightfallRaidTools", "Version") .. ")")
     footerText:SetTextColor(0.6, 0.6, 0.6)
     footerText:SetPoint("BOTTOM", ConsumeTracker_MainFrame, "BOTTOMLEFT", 90, 10) -- Centered in 180px sidebar
 
-    -- Add Custom Content for Tabs
-    ConsumeTracker_CreateManagerContent(tab1Frame)
-    ConsumeTracker_CreateItemsContent(tab2Frame)
-    ConsumeTracker_CreatePresetsContent(tab3Frame)
-    ConsumeTracker_CreateSettingsContent(tab4Frame)
+    -- Initialize Modules
+    for name, module in pairs(ConsumeTracker.Modules) do
+        if module.OnInitialize then
+             module:OnInitialize()
+        end
+    end
 
-    ConsumeTracker_UpdateTabStates()
+    -- Create Sidebar for Registered Modules
+    ConsumeTracker_MainFrame.modules = {}
+    local moduleIndex = 1
+    for name, module in pairs(ConsumeTracker.Modules) do
+        local label = module.Label or name
+        local icon = module.Icon or "Interface\\Icons\\INV_Misc_QuestionMark"
+        local yOffset = -50 - ((moduleIndex-1) * 30)
+        
+        local btn = CreateSidebarModule("ConsumeTracker_Module"..moduleIndex, icon, yOffset, label, moduleIndex)
+        ConsumeTracker_SidebarModules[moduleIndex] = btn
+        
+        -- Create Content Container
+        local content = CreateFrame("Frame", nil, ConsumeTracker_MainFrame)
+        content:SetPoint("TOPLEFT", ConsumeTracker_MainFrame, "TOPLEFT", 185, -5)
+        content:SetPoint("BOTTOMRIGHT", ConsumeTracker_MainFrame, "BOTTOMRIGHT", -5, 5)
+        content:Hide()
+        content.moduleDef = module -- Store reference to module definition
+        ConsumeTracker_MainFrame.modules[moduleIndex] = content
+        
+        moduleIndex = moduleIndex + 1
+    end
 end
 
 function ConsumeTracker_ShowMainWindow()
@@ -871,6 +706,10 @@ function ConsumeTracker_ShowModule(moduleIndex)
     -- Show selected
     local selectedModule = ConsumeTracker_MainFrame.modules[moduleIndex]
     if selectedModule then
+        -- Trigger OnEnable if present
+        if selectedModule.moduleDef and selectedModule.moduleDef.OnEnable then
+            selectedModule.moduleDef:OnEnable(selectedModule)
+        end
         selectedModule:Show()
         if ConsumeTracker_SidebarModules[moduleIndex] then
             ConsumeTracker_SidebarModules[moduleIndex].activeBar:Show()

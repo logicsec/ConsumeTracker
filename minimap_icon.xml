@@ -14,7 +14,7 @@
         </Anchors>
         <Layers>
             <Layer level="OVERLAY">
-                <Texture name="ConsumeTracker_MinimapIconTexture" file="Interface\AddOns\ConsumeTracker\images\minimap_icon">
+                <Texture name="ConsumeTracker_MinimapIconTexture" file="Interface\AddOns\NightfallRaidTools\images\minimap_icon">
                     <Size>
                         <AbsDimension x="24" y="24"/>
                     </Size>
@@ -44,8 +44,8 @@
             </OnMouseDown>
             <OnEnter>
                 GameTooltip:SetOwner(this, "ANCHOR_LEFT");
-                GameTooltip:SetText("ConsumeTracker");
-                GameTooltip:AddLine("|cff00ff00Left Click|r to open ConsumeTracker", 1, 1, 1);
+                GameTooltip:SetText("Nightfall Raid Tools");
+                GameTooltip:AddLine("|cff00ff00Left Click|r to open Nightfall Raid Tools", 1, 1, 1);
                 GameTooltip:AddLine("Shift + Click to drag", 0.5, 0.5, 0.5);
                 GameTooltip:Show();
             </OnEnter>
