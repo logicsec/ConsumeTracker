@@ -15,4 +15,6 @@ Main.lua
 modules\ConsumeTracking\Itemlist.lua
 modules\ConsumeTracking\Classpresets.lua
 modules\ConsumeTracking\Main.lua
+modules\RaidInspect\IconMappings.lua
+modules\RaidInspect\Main.lua
 minimap_icon.xml
