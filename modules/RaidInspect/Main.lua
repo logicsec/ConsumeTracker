@@ -177,7 +177,17 @@ function Module:OnInspectionEvent()
                 links[slot] = GetInventoryItemLink(unitId, slot)
             end
         end
-        
+
+        -- When talents are ready for an inspected unit, update that row's spec icon
+        if event == "INSPECT_TALENT_READY" and GetTalentTabInfo then
+            for _, row in ipairs(self.raidRows) do
+                if row.unitId == unitId then
+                    self:UpdateRowSpecFromTalents(row, false)
+                    break
+                end
+            end
+        end
+
         -- Update UI if this unit is visible
         self:RefreshRowForUnit(unitName)
         
@@ -197,6 +207,50 @@ function Module:RefreshRowForUnit(unitName)
             self:UpdateRowGear(row, unitName)
             break
         end
+    end
+end
+
+-- Set the spec icon on a row based on talents (highest-point tab)
+-- isPlayer: true for the local player (uses own talents), false for inspected units
+function Module:UpdateRowSpecFromTalents(row, isPlayer)
+    if not row or not row.specIcon then return end
+    if not GetTalentTabInfo then return end
+
+    local bestIcon = nil
+    local bestPoints = -1
+    local numTabs
+
+    if GetNumTalentTabs then
+        if isPlayer then
+            numTabs = GetNumTalentTabs() or 3
+        else
+            -- On many vanilla+/Turtle builds, passing 1 selects the inspected unit
+            numTabs = GetNumTalentTabs(1) or GetNumTalentTabs() or 3
+        end
+    else
+        numTabs = 3
+    end
+
+    for tabIndex = 1, numTabs do
+        local name, iconTexture, pointsSpent
+        if isPlayer then
+            name, iconTexture, pointsSpent = GetTalentTabInfo(tabIndex)
+        else
+            name, iconTexture, pointsSpent = GetTalentTabInfo(tabIndex, 1)
+        end
+
+        if pointsSpent and pointsSpent > bestPoints then
+            bestPoints = pointsSpent
+            bestIcon = iconTexture
+        end
+    end
+
+    if bestIcon then
+        row.specIcon:SetTexture(bestIcon)
+        row.specIcon:SetAlpha(1.0)
+    else
+        row.specIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+        row.specIcon:SetAlpha(0.3)
     end
 end
 
@@ -965,6 +1019,7 @@ function Module:RefreshRaidData()
         
         row.gearIcons = {}
         row.unitName = player.name
+        row.unitId = player.unitId
         
         for slot = 1, 17 do -- 17 display slots
             local gearBtn = CreateFrame("Button", nil, gearContainer)
@@ -1007,8 +1062,13 @@ function Module:RefreshRaidData()
         gearContainer:SetWidth(17 * (gearIconSize + gearSpacing))
         
         table.insert(self.raidRows, row)
-        
-        -- Queue inspection if online
+
+        -- For the local player, we can derive the spec icon immediately from their own talents
+        if player.unitId == "player" then
+            self:UpdateRowSpecFromTalents(row, true)
+        end
+         
+         -- Queue inspection if online
         if player.online then
             -- Check cache first
             if self.inspectCache[player.name] then
@@ -1191,4 +1251,96 @@ function Module:BuildTalentsContent(parent)
     placeholder:SetPoint("CENTER", parent, "CENTER", 0, 0)
     placeholder:SetText("Talents Tab\n(Coming Soon)")
     placeholder:SetTextColor(0.5, 0.5, 0.5)
+end
+
+-- ===========================================
+-- DEBUG COMMANDS
+-- ===========================================
+
+SLASH_NIGHTFALLDEBUG1 = "/nfdebug"
+SlashCmdList["NIGHTFALLDEBUG"] = function(msg)
+    Module:DebugTransmog()
+end
+
+-- Simple talent/spec debugging
+SLASH_NRTSPECCHECK1 = "/nfspec"
+SlashCmdList["NRTSPECCHECK"] = function(msg)
+    Module:DebugTalents()
+end
+
+function Module:DebugTransmog()
+    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00NRT Debug: Round 4 - API Checks|r")
+    
+    -- 1. Test GetContainerItemInfo (User Request)
+    -- Usually takes (bagID, slotID). Let's find an item in Bag 0 (Backpack).
+    local foundBagItem = false
+    for slot = 1, 16 do
+        local texture = GetContainerItemInfo(0, slot)
+        if texture then
+            foundBagItem = true
+            -- Capture all returns
+            local results = {GetContainerItemInfo(0, slot)}
+            local resultStr = ""
+            for i, v in ipairs(results) do
+                resultStr = resultStr .. tostring(v) .. ", "
+            end
+            DEFAULT_CHAT_FRAME:AddMessage(string.format("GetContainerItemInfo(0, %d) returns: %s", slot, resultStr))
+            break -- Just test one
+        end
+    end
+    if not foundBagItem then DEFAULT_CHAT_FRAME:AddMessage("No items in backpack to test GetContainerItemInfo.") end
+
+    -- 2. Test GetInventoryItemInfo (for equipped items)
+    -- Standard Vanilla uses GetInventoryItemTexture/Link, but maybe this exists?
+    if GetInventoryItemInfo then
+        DEFAULT_CHAT_FRAME:AddMessage("GetInventoryItemInfo exists!")
+        local results = {GetInventoryItemInfo("player", 5)}
+        local resultStr = ""
+        for i, v in ipairs(results) do
+            resultStr = resultStr .. tostring(v) .. ", "
+        end
+        DEFAULT_CHAT_FRAME:AddMessage("GetInventoryItemInfo('player', 5) returns: " .. resultStr)
+    else
+        DEFAULT_CHAT_FRAME:AddMessage("GetInventoryItemInfo does NOT exist.")
+    end
+
+    -- 3. Check for CS_ functions (Common styling for Turtle/Vanilla+)
+    local csCount = 0
+    for k, v in pairs(getfenv(0)) do
+        if type(k) == "string" and string.find(k, "^CS_") then
+            DEFAULT_CHAT_FRAME:AddMessage("Found CS Global: " .. k)
+            csCount = csCount + 1
+            if csCount > 5 then break end
+        end
+    end
+    if csCount == 0 then DEFAULT_CHAT_FRAME:AddMessage("No 'CS_' globals found.") end
+
+    -- 4. Re-Checking raw link for any hidden info (sometimes |T...|t tags?)
+    local link = GetInventoryItemLink("player", 5)
+    if link then
+        DEFAULT_CHAT_FRAME:AddMessage("Raw Link: " .. string.gsub(link, "\124", "\124\124"))
+    end
+end
+
+-- Debug helper: dump results of GetTalentTabInfo for the player
+function Module:DebugTalents()
+    if not GetTalentTabInfo then
+        DEFAULT_CHAT_FRAME:AddMessage("|cffff0000NRT Talent Debug: GetTalentTabInfo() is not available on this client.|r")
+        return
+    end
+
+    DEFAULT_CHAT_FRAME:AddMessage("|cff00ff00NRT Talent Debug: GetTalentTabInfo() results for player|r")
+
+    local numTabs = GetNumTalentTabs and GetNumTalentTabs() or 3
+    for tabIndex = 1, numTabs do
+        -- Capture and print all return values so we can see the exact signature on Turtle
+        local results = { GetTalentTabInfo(tabIndex) }
+        local resultStr = ""
+        for i, v in ipairs(results) do
+            if i > 1 then resultStr = resultStr .. " | " end
+            resultStr = resultStr .. tostring(v)
+        end
+
+        DEFAULT_CHAT_FRAME:AddMessage(string.format("Tab %d: %s", tabIndex, resultStr))
+    end
 end

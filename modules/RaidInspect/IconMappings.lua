@@ -25,7 +25,7 @@ RaidInspect_Icons.classColors = {
 RaidInspect_Icons.raceIcons = {
     -- Alliance
     ["Human_Male"] = "Interface\\Icons\\Spell_Holy_PrayerOfHealing", 
-    ["Human_Female"] = "Interface\\Icons\\Spell_Holy_PrayerOfHealing",
+    ["Human_Female"] = "Interface\\Icons\\achievement_character_human_female",
     
     ["Dwarf_Male"] = "Interface\\Icons\\Ability_Racial_Avatar", -- Stoneform lookalike
     ["Dwarf_Female"] = "Interface\\Icons\\Ability_Racial_Avatar",
@@ -37,7 +37,7 @@ RaidInspect_Icons.raceIcons = {
     ["Gnome_Female"] = "Interface\\Icons\\Spell_Arcane_Arcane01",
     
     ["High Elf_Male"] = "Interface\\Icons\\Spell_Holy_MindVision", -- Elf Eye
-    ["High Elf_Female"] = "Interface\\Icons\\Spell_Holy_MindVision",
+    ["High Elf_Female"] = "Interface\\Icons\\achievement_character_human_female",
     
     -- Horde
     ["Orc_Male"] = "Interface\\Icons\\Ability_Racial_BloodRage", -- Blood Fury
@@ -96,7 +96,7 @@ RaidInspect_Icons.specIcons = {
     ["ROGUE_Combat"] = "Interface\\Icons\\Ability_BackStab",
     ["ROGUE_Subtlety"] = "Interface\\Icons\\Ability_Stealth",
     -- Mage
-    ["MAGE_Arcane"] = "Interface\\Icons\\Spell_Holy_MagicalSentry",
+    ["MAGE_Arcane"] = "Interface\\Icons\\spell_holy_magicalsentry",
     ["MAGE_Fire"] = "Interface\\Icons\\Spell_Fire_FireBolt02",
     ["MAGE_Frost"] = "Interface\\Icons\\Spell_Frost_FrostBolt02",
     -- Warlock
