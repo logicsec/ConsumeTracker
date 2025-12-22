@@ -112,6 +112,8 @@ Module.inspectQueue = {}      -- { unitId, unitId, ... }
 Module.lastInspectTime = 0
 Module.INSPECT_INTERVAL = 0.2 -- Faster inspections (5 per sec)
 Module.isInspectRunning = false
+Module.inspectStartTime = 0  -- Track when inspection started for timeout
+Module.INSPECT_TIMEOUT = 3.0  -- Timeout after 3 seconds if no response
 
 -- Create hidden tooltip for scanning enchant names
 local scanTooltip = CreateFrame("GameTooltip", "RaidInspect_ScanTooltip", nil, "GameTooltipTemplate")
@@ -214,33 +216,112 @@ function Module:QueueInspect(unitId)
 end
 
 function Module:OnUpdate(elapsed)
+    local now = GetTime()
+    
+    -- Check for inspection timeout
+    if self.currentInspectUnit and (now - self.inspectStartTime) > self.INSPECT_TIMEOUT then
+        -- Timeout - clear current inspection and move on
+        if DEFAULT_CHAT_FRAME then
+            local unitName = UnitName(self.currentInspectUnit) or self.currentInspectUnit
+            DEFAULT_CHAT_FRAME:AddMessage(string.format("|cffffd200[RaidInspect]|r Timeout inspecting %s, moving to next", unitName))
+        end
+        self.currentInspectUnit = nil
+        self.inspectStartTime = 0
+    end
+    
     -- Process queue
     if table.getn(self.inspectQueue) == 0 then return end
     
-    local now = GetTime()
+    -- Don't start new inspection if one is in progress
+    if self.currentInspectUnit then return end
+    
     if (now - self.lastInspectTime) < self.INSPECT_INTERVAL then return end
     
     -- Pop next unit
     local unitId = table.remove(self.inspectQueue, 1)
     
-    -- Verify unit exists and is in range
-    if UnitExists(unitId) and UnitIsVisible(unitId) and CheckInteractDistance(unitId, 1) then
+    -- Verify unit exists (in raid, we can inspect even if not in interaction range)
+    if UnitExists(unitId) then
+        local unitName = UnitName(unitId) or unitId
+        
+        -- Check if unit is visible (might be required for inspection)
+        local isVisible = UnitIsVisible(unitId)
+        local distance = nil
+        if CheckInteractDistance then
+            distance = CheckInteractDistance(unitId, 1) -- Check if in interaction range
+        end
+        
+        if DEFAULT_CHAT_FRAME then
+            DEFAULT_CHAT_FRAME:AddMessage(string.format("|cffffd200[RaidInspect]|r Inspecting %s (%s) - Visible: %s, InRange: %s", 
+                unitName, unitId, tostring(isVisible), tostring(distance)))
+        end
+        
+        -- Try to inspect - in raids, players can be inspected even if not in interaction range
         self.currentInspectUnit = unitId
+        self.inspectStartTime = now
         NotifyInspect(unitId)
         self.lastInspectTime = now
+        
+        -- Try to read gear immediately (sometimes it's available right away)
+        -- This is a fallback in case events don't fire
+        local immediateGear = {}
+        for slot = 1, 19 do
+            local texture = GetInventoryItemTexture(unitId, slot)
+            if texture then
+                immediateGear[slot] = texture
+            end
+        end
+        
+        if DEFAULT_CHAT_FRAME then
+            local immediateCount = 0
+            for _ in pairs(immediateGear) do immediateCount = immediateCount + 1 end
+            if immediateCount > 0 then
+                DEFAULT_CHAT_FRAME:AddMessage(string.format("|cffffd200[RaidInspect]|r Got %d gear slots immediately for %s", immediateCount, unitName))
+                -- Store immediately available gear
+                if not self.inspectCache[unitName] then
+                    self.inspectCache[unitName] = { gear = {}, links = {}, ilvl = 0 }
+                end
+                for slot, texture in pairs(immediateGear) do
+                    self.inspectCache[unitName].gear[slot] = texture
+                    local link = GetInventoryItemLink(unitId, slot)
+                    if link then
+                        if not self.inspectCache[unitName].links then
+                            self.inspectCache[unitName].links = {}
+                        end
+                        self.inspectCache[unitName].links[slot] = link
+                    end
+                end
+                self:RefreshRowForUnit(unitName)
+            end
+        end
     else
-        -- Re-queue if not visible? Or just skip? Skip for now to avoid stuck queue
+        -- Unit doesn't exist, skip it (might have left raid)
+        if DEFAULT_CHAT_FRAME then
+            DEFAULT_CHAT_FRAME:AddMessage(string.format("|cffffd200[RaidInspect]|r Skipping %s - unit not found", unitId))
+        end
     end
 end
 
 function Module:OnInspectionEvent()
-    if event == "GET_ITEM_INFO_RECEIVED" then
+    -- Capture event name for debugging
+    local eventName = event
+    
+    if DEFAULT_CHAT_FRAME and eventName then
+        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cffffd200[RaidInspect]|r Event: %s", eventName))
+    end
+    
+    if eventName == "GET_ITEM_INFO_RECEIVED" then
         self:RefreshRaidData()
         return
     end
 
-    if event == "INSPECT_TALENT_READY" or event == "UNIT_INVENTORY_CHANGED" then
-        if not self.currentInspectUnit then return end
+    if eventName == "INSPECT_TALENT_READY" or eventName == "UNIT_INVENTORY_CHANGED" then
+        if not self.currentInspectUnit then 
+            if DEFAULT_CHAT_FRAME then
+                DEFAULT_CHAT_FRAME:AddMessage(string.format("|cffffd200[RaidInspect]|r Event %s received but no current inspection", eventName))
+            end
+            return 
+        end
         
         local unitId = self.currentInspectUnit
         local unitName = UnitName(unitId)
@@ -271,16 +352,38 @@ function Module:OnInspectionEvent()
         -- Try to determine primary talent tree and cache spec icon key.
         -- Prefer INSPECT_TALENT_READY, but fall back to UNIT_INVENTORY_CHANGED
         -- in case some servers don't fire the talent event reliably.
-        if event == "INSPECT_TALENT_READY" or not cache.specKey then
+        if eventName == "INSPECT_TALENT_READY" or not cache.specKey then
             self:ComputeAndCacheSpec(unitId, unitName, true)
         end
         
         -- Update UI if this unit is visible
         self:RefreshRowForUnit(unitName)
         
-        -- Clear current unit to be safe when talent inspection is finished
-        if event == "INSPECT_TALENT_READY" then
+        if DEFAULT_CHAT_FRAME then
+            local gearCount = 0
+            for _ in pairs(gearData) do gearCount = gearCount + 1 end
+            DEFAULT_CHAT_FRAME:AddMessage(string.format("|cffffd200[RaidInspect]|r Got %d gear slots for %s", gearCount, unitName))
+        end
+        
+        -- Clear current unit after processing (both events indicate inspection data is ready)
+        if eventName == "INSPECT_TALENT_READY" then
+            -- Talent data is ready, inspection complete
             self.currentInspectUnit = nil
+            self.inspectStartTime = 0
+            if DEFAULT_CHAT_FRAME then
+                DEFAULT_CHAT_FRAME:AddMessage(string.format("|cffffd200[RaidInspect]|r Completed inspection for %s", unitName))
+            end
+        elseif eventName == "UNIT_INVENTORY_CHANGED" then
+            -- Inventory changed - if we've been waiting a bit, clear and move on
+            -- This handles cases where INSPECT_TALENT_READY doesn't fire
+            local waitTime = GetTime() - self.inspectStartTime
+            if waitTime > 0.5 then -- Give it half a second after inventory change
+                self.currentInspectUnit = nil
+                self.inspectStartTime = 0
+                if DEFAULT_CHAT_FRAME then
+                    DEFAULT_CHAT_FRAME:AddMessage(string.format("|cffffd200[RaidInspect]|r Completed inspection for %s (via inventory)", unitName))
+                end
+            end
         end
     end
 end
@@ -608,7 +711,11 @@ function Module:BuildEquipmentContent(parent)
     scrollFrame:SetScript("OnMouseWheel", function()
         local delta = arg1
         local current = this:GetVerticalScroll()
-        local maxScroll = this.maxScroll or 0
+        local scrollChild = this.scrollChild
+        if not scrollChild then return end
+        local childHeight = scrollChild:GetHeight() or 0
+        local frameHeight = this:GetHeight() or 0
+        local maxScroll = math.max(0, childHeight - frameHeight)
         local newScroll = math.max(0, math.min(current - (delta * 30), maxScroll))
         this:SetVerticalScroll(newScroll)
     end)
@@ -685,7 +792,7 @@ function Module:GetRaidMembers()
                 race = race or "Unknown",
                 gender = gender,
                 level = level or 60,
-                online = online,
+                online = online or 0, -- Ensure online is set (0 = offline, 1 = online)
                 unitId = unitId,
             })
         end
@@ -716,8 +823,14 @@ function Module:RefreshRaidData()
     local members = self:GetRaidMembers()
     
     -- Debug: starting sync
+    local onlineCount = 0
+    for _, player in ipairs(members) do
+        if player.online == 1 then
+            onlineCount = onlineCount + 1
+        end
+    end
     if DEFAULT_CHAT_FRAME then
-        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cffffd200[RaidInspect]|r Starting sync for %d members", table.getn(members)))
+        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cffffd200[RaidInspect]|r Found %d total members, %d online", table.getn(members), onlineCount))
     end
     
     if table.getn(members) == 0 then
@@ -1158,8 +1271,8 @@ function Module:RefreshRaidData()
         
         table.insert(self.raidRows, row)
         
-        -- Queue inspection if online
-        if player.online then
+        -- Queue inspection if online (online = 1 means online, 0 or nil means offline)
+        if player.online == 1 then
             -- Check cache first
             if self.inspectCache[player.name] then
                 self:UpdateRowGear(row, player.name)
@@ -1194,6 +1307,11 @@ function Module:RefreshRaidData()
                 self:QueueInspect(player.unitId)
             end
         end
+    end
+    
+    -- Log queue status
+    if DEFAULT_CHAT_FRAME then
+        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cffffd200[RaidInspect]|r Queued %d members for inspection", table.getn(self.inspectQueue)))
     end
     
     -- Update scroll child height (Dynamic)
@@ -1336,6 +1454,17 @@ function Module:RebuildRowLayout()
     end
     
     scrollChild:SetHeight(yOffset)
+    
+    -- Update maxScroll for the scroll frame
+    local childHeight = scrollChild:GetHeight() or 0
+    local frameHeight = scrollFrame:GetHeight() or 0
+    scrollFrame.maxScroll = math.max(0, childHeight - frameHeight)
+    
+    -- Ensure current scroll position is within bounds
+    local currentScroll = scrollFrame:GetVerticalScroll()
+    if currentScroll > scrollFrame.maxScroll then
+        scrollFrame:SetVerticalScroll(scrollFrame.maxScroll)
+    end
 end
 
 
